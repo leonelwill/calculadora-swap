@@ -50,7 +50,7 @@ class PDF(FPDF):
     def header(self):
         # Logo Centralizado e Maior
         if os.path.exists("logo.png"):
-            # x=center, y=10, w=60 (aumentado)
+            # x=center, y=10, w=60
             self.image("logo.png", x=75, y=10, w=60) 
         self.ln(25) # Espaço após logo
         
@@ -218,16 +218,12 @@ if btn_calcular:
     fig.add_trace(go.Scatter(x=dates, y=y1, mode='lines', name=f"Manter {nome_ativo_1}", line=dict(color=color_v1, width=2, dash='dot')))
     fig.add_trace(go.Scatter(x=dates, y=y2, mode='lines', name=f"Trocar por {nome_ativo_2}", line=dict(color=color_v2, width=4)))
     
-    # Anotações Inteligentes (Com fundo branco para não sobrepor linha)
-    # Inicio
+    # Anotações
     fig.add_annotation(x=dates[0], y=y1[0], text=f"Início: {format_currency(y1[0])}", showarrow=False, yshift=20, font=dict(color=color_v1), bgcolor="rgba(255,255,255,0.8)")
     fig.add_annotation(x=dates[0], y=y2[0], text=f"Início: {format_currency(y2[0])}", showarrow=False, yshift=-20, font=dict(color=color_v2), bgcolor="rgba(255,255,255,0.8)")
     
-    # Fim (Lógica para afastar textos)
     distancia_final = abs(y1[-1] - y2[-1])
     offset_base = 20
-    
-    # Se estiverem muito perto, afasta mais
     if distancia_final < (final_v1 * 0.05):
         offset_base = 40
         
@@ -247,7 +243,6 @@ if btn_calcular:
         font=dict(color=color_v2, size=14, weight="bold"), bgcolor="rgba(255,255,255,0.9)", bordercolor=color_v2, borderwidth=2
     )
 
-    # Marcação da Virada (Com Data)
     if has_cross:
         fig.add_annotation(
             x=cross_date, y=y2[cross_idx[0]],
@@ -259,8 +254,8 @@ if btn_calcular:
         )
 
     fig.update_layout(
-        height=650, # Altura Aumentada
-        title=dict(text="Curva de Evolução Patrimonial", x=0.5), # Título centralizado
+        height=650, 
+        title=dict(text="Curva de Evolução Patrimonial", x=0.5),
         xaxis_title="Linha do Tempo",
         yaxis_title="Patrimônio (R$)",
         hovermode="x unified",
@@ -270,20 +265,19 @@ if btn_calcular:
     
     st.plotly_chart(fig, use_container_width=True)
     
-    # --- PREPARAÇÃO DO PDF ---
-    st.markdown("### 📑 Exportar Relatório")
+    # --- PREPARAÇÃO DO PDF AUTOMÁTICA ---
+    st.markdown("### 📑 Relatório Pronto")
     
-    # Salvar gráfico como imagem temporária para o PDF
+    # 1. Gera Imagem
+    chart_path = None
     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
-        # Tenta salvar usando kaleido
         try:
             fig.write_image(tmpfile.name, width=1200, height=600, scale=2)
             chart_path = tmpfile.name
         except Exception as e:
-            st.error(f"Erro ao gerar imagem do gráfico para PDF: {e}")
-            chart_path = None
+            st.error(f"Erro imagem: {e}. Verifique se instalou 'kaleido==0.2.1'")
 
-    # Dicionários de dados
+    # 2. Prepara Dados
     inputs_pdf = {
         'nome1': nome_ativo_1, 'idx1': idx_1, 'taxa1': taxa_liq_1, 'venc1': vencimento_1, 'fin_atual': format_currency(financeiro_atual_1),
         'nome2': nome_ativo_2, 'idx2': idx_2, 'taxa2': taxa_liq_2, 'venc2': vencimento_2, 'val_aplicado2': format_currency(val_aplicado_2)
@@ -294,12 +288,14 @@ if btn_calcular:
         'data_break': cross_date.strftime('%d/%m/%Y') if has_cross else "N/A"
     }
     
-    if st.button("📄 Baixar Relatório Completo (PDF)"):
-        pdf_bytes = criar_pdf_premium(inputs_pdf, results_pdf, chart_path)
-        
-        st.download_button(
-            label="Clique aqui para salvar o PDF",
-            data=pdf_bytes,
-            file_name="Relatorio_Estrategia_Ethimos.pdf",
-            mime="application/pdf"
-        )
+    # 3. Gera PDF (Bytes)
+    pdf_bytes = criar_pdf_premium(inputs_pdf, results_pdf, chart_path)
+    
+    # 4. Mostra o botão DIRETO (sem 'if st.button' em volta)
+    st.download_button(
+        label="📄 CLIQUE AQUI PARA BAIXAR O PDF",
+        data=pdf_bytes,
+        file_name="Relatorio_Estrategia_Ethimos.pdf",
+        mime="application/pdf",
+        type="primary"
+    )
