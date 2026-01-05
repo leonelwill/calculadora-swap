@@ -18,7 +18,7 @@ st.markdown("""
             text-align: center;
             font-size: 36px;
             font-weight: bold;
-            color: #1E1E1E;
+            color: #FFFFFF; /* COR ALTERADA PARA BRANCO */
             margin-top: -20px;
         }
         .stButton>button {
@@ -291,7 +291,7 @@ if btn_calcular:
     # 3. Gera PDF (Bytes)
     pdf_bytes = criar_pdf_premium(inputs_pdf, results_pdf, chart_path)
     
-    # 4. Mostra o botão DIRETO (sem 'if st.button' em volta)
+    # 4. Mostra o botão DIRETO
     st.download_button(
         label="📄 CLIQUE AQUI PARA BAIXAR O PDF",
         data=pdf_bytes,
